@@ -1,0 +1,6 @@
+opencv-python-headless
+dlib
+face_recognition
+onnxruntime-gpu
+numpy
+scipy
