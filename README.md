@@ -19,6 +19,10 @@ Face tracker and crop cut application.
 1. **Create a virtual environment:**
    ```sh
    python -m venv venv
+
+   source venv/bin/activate
+
+   pip install - r requirements.txt
    
    python main.py path/to/video.mp4 path/to/Screenshot_1.png path/to/output_directory --frame_skip 1 --gpu 0
 
