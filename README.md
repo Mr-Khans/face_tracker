@@ -1,7 +1,7 @@
 # face_tracker
 face tracker and crop cut
 
-##Python 3.10.12
+## Python 3.10.12
 
 create venv:
 
@@ -14,7 +14,7 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 
-##requirements.txt
+## requirements.txt
 
 
 opencv-python-headless==4.10.0.84
@@ -32,7 +32,7 @@ numpy==1.25.2
 scipy==1.11.4
 
 
-##Test result_1:
+## Test result_1:
 
 CPU
 
