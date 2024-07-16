@@ -51,3 +51,15 @@ Average time per frame: 0.0278 seconds
 Total processing time: 10.6859 seconds
 
 
+## RUN
+
+python face_processing.py video.mp4 reference.jpg output_dir --frame_skip 2 --gpu 0 --padding 0.3
+
+#Model
+
+wget http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
+wget http://dlib.net/files/dlib_face_recognition_resnet_model_v1.dat.bz2
+bzip2 -dk shape_predictor_68_face_landmarks.dat.bz2
+bzip2 -dk dlib_face_recognition_resnet_model_v1.dat.bz2
+
+
