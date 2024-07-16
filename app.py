@@ -7,33 +7,24 @@ import onnxruntime as ort
 from scipy.spatial import distance
 import json
 from typing import List, Tuple, Dict, Any
-
+import argparse
 
 # Initialize dlib's face detector and the landmark predictor
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 
-# Load the reference image and encode the target face
-reference_image_path = "path/to/reference/image.jpg"
-reference_image = face_recognition.load_image_file(reference_image_path)
-reference_encoding = face_recognition.face_encodings(reference_image)[0]
 
-# Initialize ONNX runtime session for GPU processing
-gpu_available = ort.get_device().upper() != "CPU"
-sess = ort.InferenceSession("model.onnx", providers=['CUDAExecutionProvider'] if gpu_available else ['CPUExecutionProvider'])
+def load_reference_image(reference_image_path: str) -> np.ndarray:
+    reference_image = face_recognition.load_image_file(reference_image_path)
+    reference_encoding = face_recognition.face_encodings(reference_image)[0]
+    return reference_encoding
 
-def process_frame(frame: np.ndarray, frame_number: int, output_dir: str) -> List[Dict[str, Any]]:
-    """
-    Processes a single frame to detect and align faces, and save the aligned faces and metadata.
+def init_onnx_session(gpu: int) -> ort.InferenceSession:
+    providers = ['CUDAExecutionProvider'] if gpu >= 0 else ['CPUExecutionProvider']
+    sess = ort.InferenceSession("model.onnx", providers=providers)
+    return sess
 
-    Args:
-        frame (np.ndarray): The video frame to process.
-        frame_number (int): The current frame number.
-        output_dir (str): Directory to save the aligned faces and metadata.
-
-    Returns:
-        List[Dict[str, Any]]: Metadata for detected and aligned faces.
-    """
+def process_frame(frame: np.ndarray, frame_number: int, reference_encoding: np.ndarray, output_dir: str) -> List[Dict[str, Any]]:
     rgb_frame = frame[:, :, ::-1]
     faces = detector(rgb_frame)
 
@@ -57,16 +48,6 @@ def process_frame(frame: np.ndarray, frame_number: int, output_dir: str) -> List
     return metadata
 
 def align_face(image: np.ndarray, landmarks_points: List[Tuple[int, int]]) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Aligns the face in the image based on the provided landmarks points.
-
-    Args:
-        image (np.ndarray): The original image containing the face.
-        landmarks_points (List[Tuple[int, int]]): The landmark points of the face.
-
-    Returns:
-        Tuple[np.ndarray, np.ndarray]: The aligned face image and the transformation matrix.
-    """
     eye_left = np.mean(landmarks_points[36:42], axis=0)
     eye_right = np.mean(landmarks_points[42:48], axis=0)
     nose = landmarks_points[30]
@@ -83,30 +64,15 @@ def align_face(image: np.ndarray, landmarks_points: List[Tuple[int, int]]) -> Tu
     return aligned_face, M
 
 def save_aligned_face(face: np.ndarray, frame_number: int, output_dir: str) -> None:
-    """
-    Saves the aligned face image to the specified directory.
-
-    Args:
-        face (np.ndarray): The aligned face image.
-        frame_number (int): The frame number from which the face was extracted.
-        output_dir (str): The directory to save the aligned face image.
-    """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
     filename = os.path.join(output_dir, f"aligned_face_{frame_number}.jpg")
     cv2.imwrite(filename, face)
 
 def main(video_path: str, reference_image_path: str, output_dir: str, frame_skip: int = 1, gpu: int = 0) -> None:
-    """
-    Main function to process the video, detect and align target faces, and save the results.
+    reference_encoding = load_reference_image(reference_image_path)
+    #sess = init_onnx_session(gpu)
 
-    Args:
-        video_path (str): Path to the video file.
-        reference_image_path (str): Path to the reference image of the target actor.
-        output_dir (str): Directory to save the aligned faces and metadata.
-        frame_skip (int): Number of frames to skip during processing (default is 1).
-        gpu (int): GPU ID to use for processing. Set to -1 for CPU only (default is 0).
-    """
     cap = cv2.VideoCapture(video_path)
     frame_number = 0
     metadata = []
@@ -117,7 +83,7 @@ def main(video_path: str, reference_image_path: str, output_dir: str, frame_skip
             break
 
         if frame_number % frame_skip == 0:
-            frame_metadata = process_frame(frame, frame_number, output_dir)
+            frame_metadata = process_frame(frame, frame_number, reference_encoding, output_dir)
             metadata.extend(frame_metadata)
 
         frame_number += 1
@@ -126,7 +92,8 @@ def main(video_path: str, reference_image_path: str, output_dir: str, frame_skip
 
     with open(os.path.join(output_dir, "metadata.json"), "w") as f:
         json.dump(metadata, f, indent=4)
-
+        
+        
 if __name__ == "__main__":
     import argparse
 
