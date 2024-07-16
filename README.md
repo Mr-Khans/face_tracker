@@ -26,7 +26,7 @@ Face tracker and crop cut application.
 
 ## RUN
 
-2. python face_processing.py video.mp4 reference.jpg output_dir --frame_skip 2 --gpu 0 --padding 0.3
+2. python main.py video.mp4 reference.jpg output_dir --frame_skip 2 --gpu 0 --padding 0.3
 
 # Model
 
